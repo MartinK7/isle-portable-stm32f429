@@ -1,4 +1,20 @@
-# LEGO Island, portable
+# LEGO Island – Porting to STM32F429 Discovery Kit
+
+Welcome!
+This project is an experiment to run *LEGO Island* on the STM32F429 Discovery Kit.
+
+Due to the limited 8 MiB of SDRAM, I'm not yet sure how feasible this is—but I’m eager to find out.
+With many years of experience working on embedded systems (with and without operating systems), I'm excited to see how far I can push this.
+
+![Lego Island game screenshot → Photo of Discovery KIT](kit.jpg)
+
+## Progress Checklist
+
+* \[🚧] Make the project compile with `arm-none-eabi-*` toolchain (stub out missing functions)
+* \[❌] Set up a minimal system with FreeRTOS
+* \[❌] Add POSIX thread support (via FreeRTOS)
+* \[❌] Implement required parts of the SDL library for STM32F429 — primarily graphics and timers
+* \[❌] USB Stack for keyboard and mouse??
 
 [Development Vlog](https://www.youtube.com/playlist?list=PLbpl-gZkNl2Db4xcAsT_xOfOwRk-2DPHL) | [Contributing](/CONTRIBUTING.md) | [Matrix](https://matrix.to/#/#isledecomp:matrix.org) | [Forums](https://forum.mattkc.com/viewforum.php?f=1) | [Patreon](https://www.patreon.com/mattkc)
   
