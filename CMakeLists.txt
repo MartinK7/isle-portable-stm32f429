@@ -74,7 +74,7 @@ if (DOWNLOAD_DEPENDENCIES)
   else()
     FetchContent_Declare(
         SDL3
-        GIT_REPOSITORY "https://github.com/libsdl-org/SDL.git"
+        GIT_REPOSITORY "https://github.com/MartinK7/SDL-baremetal.git"
         GIT_TAG "main"
         EXCLUDE_FROM_ALL
     )
@@ -360,8 +360,14 @@ target_include_directories(lego1 PRIVATE "${CMAKE_SOURCE_DIR}/LEGO1/omni/include
 if (WIN32)
   target_link_libraries(lego1 INTERFACE winmm)
 endif()
-target_link_libraries(lego1 PRIVATE libsmacker miniaudio)
-target_include_directories(lego1 PUBLIC $<BUILD_INTERFACE:$<TARGET_PROPERTY:miniaudio,INTERFACE_INCLUDE_DIRECTORIES>>)
+target_link_libraries(lego1 PRIVATE libsmacker)
+
+if (NOT BAREMETAL)
+  target_link_libraries(lego1 PRIVATE miniaudio)
+  target_include_directories(lego1 PUBLIC $<BUILD_INTERFACE:$<TARGET_PROPERTY:miniaudio,INTERFACE_INCLUDE_DIRECTORIES>>)
+else()
+  target_include_directories(lego1 PUBLIC baremetal/miniaudio)
+endif()
 
 # lego1_impl sources
 target_sources(lego1 PRIVATE
@@ -499,6 +505,11 @@ if (ISLE_BUILD_APP)
   endif()
 
   target_compile_definitions(isle PRIVATE ISLE_APP)
+
+  # Startup code  
+  if(BAREMETAL)
+    target_sources(isle PRIVATE baremetal/startup.c baremetal/stub.c)
+  endif()
 
   # Use internal DirectX 5 if required
   target_link_libraries(isle PRIVATE $<$<BOOL:${ISLE_USE_DX5}>:DirectX5::DirectX5>)

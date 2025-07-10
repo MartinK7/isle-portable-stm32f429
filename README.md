@@ -6,13 +6,40 @@ This project is an experiment to run *LEGO Island* on the STM32F429 Discovery Ki
 Due to the limited 8 MiB of SDRAM, I'm not yet sure how feasible this is—but I’m eager to find out.
 With many years of experience working on embedded systems (with and without operating systems), I'm excited to see how far I can push this.
 
+### 📦 Project Status
+
+The project is currently buildable and running.
+
+```sh
+mkdir -p build
+cd build
+cmake .. \
+  -DCMAKE_TOOLCHAIN_FILE=../baremetal/toolchain-arm-none-eabi.cmake \
+  -DBAREMETAL=ON \
+  -DISLE_BUILD_APP=ON \
+  -DISLE_DEBUG=OFF \
+  -DISLE_MINIWIN=ON \
+  -DISLE_BUILD_CONFIG=OFF \
+  -DBUILD_SHARED_LIBS=OFF
+```
+
+* **Current SDRAM usage:** \~2.83 MiB out of 8 MiB
+* **Available SDRAM left:** \~5.17 MiB
+
+It will be interesting to see how much of the remaining memory can accommodate **models**, **textures**, and **sounds** — fitting everything within the 8 MiB limit is the next challenge!
+```
+arm-none-eabi-size isle
+   text	   data	    bss	    dec	    hex	filename
+2767536	 154572	  45752	2967860	 2d4934	isle
+```
+
 ![Lego Island game screenshot → Photo of Discovery KIT](kit.jpg)
 
 ## Progress Checklist
 
-* \[🚧] Make the project compile with `arm-none-eabi-*` toolchain (stub out missing functions)
-* \[❌] Set up a minimal system with FreeRTOS
-* \[❌] Add POSIX thread support (via FreeRTOS)
+* \[✅] Make the project compile with `arm-none-eabi-*` toolchain (stub out missing functions)
+* \[🚧] Set up a minimal system with FreeRTOS
+* \[🚧] Add POSIX thread support (via FreeRTOS)
 * \[❌] Implement required parts of the SDL library for STM32F429 — primarily graphics and timers
 * \[❌] USB Stack for keyboard and mouse??
 
