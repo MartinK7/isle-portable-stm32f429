@@ -508,7 +508,7 @@ if (ISLE_BUILD_APP)
 
   # Startup code  
   if(BAREMETAL)
-    target_sources(isle PRIVATE baremetal/startup.c baremetal/stub.c)
+    target_sources(isle PRIVATE baremetal/startup.c baremetal/stub.c baremetal/sysmem.c baremetal/ramfs.c)
   endif()
 
   # Use internal DirectX 5 if required

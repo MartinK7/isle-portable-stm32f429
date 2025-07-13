@@ -1,4 +1,6 @@
+
 #include <stdint.h>
+#include <stdio.h>
 
 /* Symbols defined in the linker script */
 extern uint32_t _estack;
@@ -25,7 +27,7 @@ void IRQ0_Handler(void)            __attribute__((weak, alias("Default_Handler")
 /* ... Add more IRQ handlers or alias them to Default_Handler */
 
 /* Forward declaration of main */
-extern int main(void);
+extern int main(int argc, char *argv[]);
 
 /* Vector table (placed in .isr_vector section via linker script) */
 __attribute__((section(".isr_vector")))
@@ -57,7 +59,12 @@ void Reset_Handler(void)
 	}
 
 	/* Call the application's entry point */
-	main();
+	static char arg0[] = "./isle";
+	static char *argv[] = { arg0, NULL };
+	int argc = 1;
+	int result = main(argc, argv);
+	
+	printf("Application %s returned %d\n", arg0[0], result);
 
 	/* If main returns, loop forever */
 	while (1) {}

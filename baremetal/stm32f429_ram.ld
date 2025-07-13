@@ -6,7 +6,7 @@ ENTRY(Reset_Handler)
 MEMORY
 {
   RAM   (xrw) : ORIGIN = 0x20000000, LENGTH = 192K
-  SDRAM (xrw) : ORIGIN = 0xC0000000, LENGTH = 8M
+  SDRAM (xrw) : ORIGIN = 0x90000000, LENGTH = 8M
 }
 
 _estack = ORIGIN(RAM) + LENGTH(RAM); /* Initial stack pointer */
@@ -34,8 +34,22 @@ SECTIONS
 
   .bss :
   {
+    . = ALIGN(8);
+    _sbss = .;
     *(.bss*)
     *(COMMON)
+    . = ALIGN(8);
+    _ebss = .;
+  } > SDRAM
+
+  /* Heap section in SDRAM */
+  .heap (NOLOAD) :
+  {
+    . = ALIGN(8);
+    _heap_start = .;
+    KEEP(*(.heap))
+    . = ALIGN(8);
+    _heap_end = .;
   } > SDRAM
 
   . = ALIGN(4);

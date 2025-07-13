@@ -21,7 +21,7 @@ set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/baremetal/stm32f429_ram.ld)
 set(MCU_FLAGS "-mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard")
 
 # Common flags
-set(COMMON_FLAGS "${MCU_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-unwind-tables -D__BAREMETAL__ -I${CMAKE_SOURCE_DIR}/baremetal")
+set(COMMON_FLAGS "${MCU_FLAGS} -ffunction-sections -fdata-sections -fno-exceptions -fno-unwind-tables -g3 -D__BAREMETAL__ -I${CMAKE_SOURCE_DIR}/baremetal -DSTM32F429ZITx -I${CMAKE_SOURCE_DIR}/baremetal/stm32f429-discovery/libraries/CMSIS/Device/ST/STM32F4xx/Include -I${CMAKE_SOURCE_DIR}/baremetal/stm32f429-discovery/libraries/CMSIS/Include")
 
 set(CMAKE_C_FLAGS_INIT "${COMMON_FLAGS}")
 set(CMAKE_CXX_FLAGS_INIT "${COMMON_FLAGS}")
