@@ -627,10 +627,13 @@ if (ISLE_BUILD_APP)
     endif()
   endif()
   if (BAREMETAL)
-    # Post-build: Convert ELF to BIN
-    add_custom_command(TARGET isle POST_BUILD
+    # Post-build: Convert ELF to BIN, then compress
+    add_custom_command(
+      TARGET isle POST_BUILD
       COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:isle> ${CMAKE_CURRENT_BINARY_DIR}/isle.bin
-      COMMENT "Generating binary file: isle.bin"
+      COMMAND ${CMAKE_COMMAND} -E echo "Compressing isle.bin to isle.bin.gz"
+      COMMAND gzip -c ${CMAKE_CURRENT_BINARY_DIR}/isle.bin > ${CMAKE_CURRENT_BINARY_DIR}/isle.bin.gz
+      COMMENT "Generating and compressing binary file: isle.bin.gz"
     )
   endif()
 endif()
