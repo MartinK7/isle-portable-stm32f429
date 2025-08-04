@@ -16,7 +16,7 @@ The project is currently buildable and running.
 mkdir -p build
 cd build
 cmake .. \
-  -DCMAKE_TOOLCHAIN_FILE=../baremetal/toolchain-arm-none-eabi.cmake \
+  -DCMAKE_TOOLCHAIN_FILE=../stm32f429-discovery/isle-in-sdram/toolchain-arm-none-eabi.cmake \
   -DBAREMETAL=ON \
   -DISLE_BUILD_APP=ON \
   -DISLE_DEBUG=OFF \

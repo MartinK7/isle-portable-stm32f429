@@ -7,6 +7,3 @@
 [submodule "imgui"]
 	path = 3rdparty/imgui
 	url = https://github.com/ocornut/imgui
-[submodule "baremetal/Lab-Project-FreeRTOS-POSIX"]
-	path = baremetal/Lab-Project-FreeRTOS-POSIX
-	url = https://github.com/FreeRTOS/Lab-Project-FreeRTOS-POSIX

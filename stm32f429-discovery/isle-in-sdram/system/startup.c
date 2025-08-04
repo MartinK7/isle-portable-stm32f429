@@ -12,7 +12,7 @@ void Reset_Handler(void);
 void Default_Handler(void);
 
 /* Weak aliases for all exception handlers to Default_Handler */
-void NMI_Handler(void)              __attribute__((weak, alias("Default_Handler")));
+void NMI_Handler(void)             __attribute__((weak, alias("Default_Handler")));
 void HardFault_Handler(void)       __attribute__((weak, alias("Default_Handler")));
 void MemManage_Handler(void)       __attribute__((weak, alias("Default_Handler")));
 void BusFault_Handler(void)        __attribute__((weak, alias("Default_Handler")));

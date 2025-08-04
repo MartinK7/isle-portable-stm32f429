@@ -377,7 +377,7 @@ if (NOT BAREMETAL)
   target_link_libraries(lego1 PRIVATE miniaudio)
   target_include_directories(lego1 PUBLIC $<BUILD_INTERFACE:$<TARGET_PROPERTY:miniaudio,INTERFACE_INCLUDE_DIRECTORIES>>)
 else()
-  target_include_directories(lego1 PUBLIC baremetal/miniaudio)
+  target_include_directories(lego1 PUBLIC stm32f429-discovery/isle-in-sdram/3rdparty/miniaudio)
 endif()
 
 # lego1_impl sources
@@ -522,9 +522,14 @@ if (ISLE_BUILD_APP)
 
   target_compile_definitions(isle PRIVATE ISLE_APP)
 
-  # Startup code  
+  # Core functions and system for baremetal
   if(BAREMETAL)
-    target_sources(isle PRIVATE baremetal/startup.c baremetal/stub.c baremetal/sysmem.c baremetal/ramfs.c)
+    target_sources(isle PRIVATE
+      stm32f429-discovery/isle-in-sdram/src/stub.c
+      stm32f429-discovery/isle-in-sdram/system/startup.c
+      stm32f429-discovery/isle-in-sdram/system/sysmem.c
+      stm32f429-discovery/isle-in-sdram/system/ramfs.c
+    )
   endif()
 
   # Use internal DirectX 5 if required
@@ -620,6 +625,13 @@ if (ISLE_BUILD_APP)
           ${CMAKE_SOURCE_DIR}/ISLE/res/no.png
       )
     endif()
+  endif()
+  if (BAREMETAL)
+    # Post-build: Convert ELF to BIN
+    add_custom_command(TARGET isle POST_BUILD
+      COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:isle> ${CMAKE_CURRENT_BINARY_DIR}/isle.bin
+      COMMENT "Generating binary file: isle.bin"
+    )
   endif()
 endif()
 
