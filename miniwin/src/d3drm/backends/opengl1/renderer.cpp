@@ -16,7 +16,7 @@ static_assert(sizeof(GL11_BridgeTexCoord) == sizeof(TexCoord), "GL11_BridgeTexCo
 static_assert(sizeof(GL11_BridgeSceneLight) == sizeof(SceneLight), "GL11_BridgeSceneLight is wrong size");
 static_assert(sizeof(GL11_BridgeSceneVertex) == sizeof(D3DRMVERTEX), "GL11_BridgeSceneVertex is wrong size");
 
-Direct3DRMRenderer* OpenGL1Renderer::Create(DWORD width, DWORD height)
+Direct3DRMRenderer* OpenGL1Renderer::Create(DWORD width, DWORD height, DWORD msaaSamples)
 {
 	// We have to reset the attributes here after having enumerated the
 	// OpenGL ES 2.0 renderer, or else SDL gets very confused by SDL_GL_DEPTH_SIZE
@@ -27,6 +27,11 @@ Direct3DRMRenderer* OpenGL1Renderer::Create(DWORD width, DWORD height)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+
+	if (msaaSamples > 1) {
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, msaaSamples);
+	}
 
 	if (!DDWindow) {
 		SDL_Log("No window handler");
@@ -175,6 +180,7 @@ static Uint32 UploadTextureData(SDL_Surface* src, bool useNPOT, bool isUI, float
 
 Uint32 OpenGL1Renderer::GetTextureId(IDirect3DRMTexture* iTexture, bool isUI, float scaleX, float scaleY)
 {
+	SDL_GL_MakeCurrent(DDWindow, m_context);
 	auto texture = static_cast<Direct3DRMTextureImpl*>(iTexture);
 	auto surface = static_cast<DirectDrawSurfaceImpl*>(texture->m_surface);
 
@@ -314,6 +320,7 @@ Uint32 OpenGL1Renderer::GetMeshId(IDirect3DRMMesh* mesh, const MeshGroup* meshGr
 
 HRESULT OpenGL1Renderer::BeginFrame()
 {
+	SDL_GL_MakeCurrent(DDWindow, m_context);
 	GL11_BeginFrame((Matrix4x4*) &m_projection[0][0]);
 
 	int lightIdx = 0;
@@ -361,6 +368,7 @@ HRESULT OpenGL1Renderer::FinalizeFrame()
 
 void OpenGL1Renderer::Resize(int width, int height, const ViewportTransform& viewportTransform)
 {
+	SDL_GL_MakeCurrent(DDWindow, m_context);
 	m_width = width;
 	m_height = height;
 	m_viewportTransform = viewportTransform;
@@ -371,12 +379,14 @@ void OpenGL1Renderer::Resize(int width, int height, const ViewportTransform& vie
 
 void OpenGL1Renderer::Clear(float r, float g, float b)
 {
+	SDL_GL_MakeCurrent(DDWindow, m_context);
 	m_dirty = true;
 	GL11_Clear(r, g, b);
 }
 
 void OpenGL1Renderer::Flip()
 {
+	SDL_GL_MakeCurrent(DDWindow, m_context);
 	if (m_dirty) {
 		SDL_GL_SwapWindow(DDWindow);
 		m_dirty = false;
@@ -385,6 +395,7 @@ void OpenGL1Renderer::Flip()
 
 void OpenGL1Renderer::Draw2DImage(Uint32 textureId, const SDL_Rect& srcRect, const SDL_Rect& dstRect, FColor color)
 {
+	SDL_GL_MakeCurrent(DDWindow, m_context);
 	m_dirty = true;
 
 	float left = -m_viewportTransform.offsetX / m_viewportTransform.scale;

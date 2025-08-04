@@ -866,7 +866,7 @@ void LegoGameState::SwitchArea(Area p_area)
 	m_previousArea = m_currentArea;
 	m_currentArea = p_area;
 
-	FUN_10015820(TRUE, LegoOmni::c_disableInput | LegoOmni::c_disable3d);
+	Disable(TRUE, LegoOmni::c_disableInput | LegoOmni::c_disable3d);
 	BackgroundAudioManager()->Stop();
 	AnimationManager()->Suspend();
 	VideoManager()->SetUnk0x554(FALSE);
@@ -967,7 +967,7 @@ void LegoGameState::SwitchArea(Area p_area)
 		Act1State* state = (Act1State*) GameState()->GetState("Act1State");
 		LoadIsle();
 
-		if (state->GetUnknown18() == 7) {
+		if (state->GetState() == Act1State::e_transitionToTowtrack) {
 			VideoManager()->Get3DManager()->SetFrustrum(90, 0.1f, 250.0f);
 		}
 		else {
@@ -1179,28 +1179,28 @@ void LegoGameState::Init()
 		Helicopter* copter = (Helicopter*) isle->Find(*g_copterScript, CopterScript::c_Helicopter_Actor);
 		if (copter) {
 			isle->RemoveActor(copter);
-			isle->VTable0x6c(copter);
+			isle->RemoveVehicle(copter);
 			delete copter;
 		}
 
 		DuneBuggy* dunebuggy = (DuneBuggy*) isle->Find(*g_dunecarScript, DunecarScript::c_DuneBugy_Actor);
 		if (dunebuggy) {
 			isle->RemoveActor(dunebuggy);
-			isle->VTable0x6c(dunebuggy);
+			isle->RemoveVehicle(dunebuggy);
 			delete dunebuggy;
 		}
 
 		Jetski* jetski = (Jetski*) isle->Find(*g_jetskiScript, JetskiScript::c_Jetski_Actor);
 		if (jetski) {
 			isle->RemoveActor(jetski);
-			isle->VTable0x6c(jetski);
+			isle->RemoveVehicle(jetski);
 			delete jetski;
 		}
 
 		RaceCar* racecar = (RaceCar*) isle->Find(*g_racecarScript, RacecarScript::c_RaceCar_Actor);
 		if (racecar) {
 			isle->RemoveActor(racecar);
-			isle->VTable0x6c(racecar);
+			isle->RemoveVehicle(racecar);
 			delete racecar;
 		}
 	}
@@ -1347,6 +1347,11 @@ void LegoBackgroundColor::SetLightColor()
 	float convertedR, convertedG, convertedB;
 	ConvertHSVToRGB(m_h, m_s, m_v, &convertedR, &convertedG, &convertedB);
 	SetLightColor(convertedR, convertedG, convertedB);
+}
+
+// FUNCTION: BETA10 0x10086a87
+LegoFullScreenMovie::LegoFullScreenMovie()
+{
 }
 
 // FUNCTION: LEGO1 0x1003c500

@@ -5,7 +5,7 @@
 #include "lego1_export.h"
 #include "legoutils.h"
 #include "mxdsaction.h"
-#include "mxomni.h"
+#include "mxmain.h"
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_timer.h>
@@ -114,6 +114,7 @@ public:
 	}
 
 	// FUNCTION: LEGO1 0x10058ab0
+	// FUNCTION: BETA10 0x1008f860
 	MxBool IsA(const char* p_name) const override // vtable+0x10
 	{
 		return !strcmp(p_name, LegoOmni::ClassName()) || MxOmni::IsA(p_name);
@@ -134,7 +135,7 @@ public:
 	LegoROI* FindROI(const char* p_name);
 	void AddWorld(LegoWorld* p_world);
 	void DeleteWorld(LegoWorld* p_world);
-	void FUN_1005b4f0(MxBool p_disable, MxU16 p_flags);
+	void Disable(MxBool p_disable, MxU16 p_flags);
 	LEGO1_EXPORT void CreateBackgroundAudio();
 	LEGO1_EXPORT void RemoveWorld(const MxAtomId& p_atom, MxLong p_objectId);
 	MxResult RegisterWorlds();
@@ -153,9 +154,14 @@ public:
 	// FUNCTION: BETA10 0x1009e7a0
 	LegoInputManager* GetInputManager() { return m_inputManager; }
 
+	// FUNCTION: BETA10 0x100e5400
 	LegoTextureContainer* GetTextureContainer() { return m_textureContainer; }
+
 	ViewLODListManager* GetViewLODListManager() { return m_viewLODListManager; }
+
+	// FUNCTION: BETA10 0x100969b0
 	LegoWorld* GetCurrentWorld() { return m_currentWorld; }
+
 	LegoNavController* GetNavController() { return m_navController; }
 	LegoPathActor* GetUserActor() { return m_userActor; }
 
@@ -185,8 +191,8 @@ public:
 	// FUNCTION: BETA10 0x100d55c0
 	void SetExit(MxBool p_exit) { m_exit = p_exit; }
 
-	MxResult StartActionIfUnknown0x13c(MxDSAction& p_dsAction) { return m_unk0x13c ? Start(&p_dsAction) : SUCCESS; }
-	void SetUnknown13c(MxBool p_unk0x13c) { m_unk0x13c = p_unk0x13c; }
+	MxResult StartActionIfInitialized(MxDSAction& p_dsAction) { return m_initialized ? Start(&p_dsAction) : SUCCESS; }
+	void SetInitialized(MxBool p_unk0x13c) { m_initialized = p_unk0x13c; }
 
 	void CloseMainWindow()
 	{
@@ -204,6 +210,7 @@ public:
 	MxBool IsVersion10() { return m_version10; }
 
 	// SYNTHETIC: LEGO1 0x10058b30
+	// SYNTHETIC: BETA10 0x1008f8d0
 	// LegoOmni::`scalar deleting destructor'
 
 private:
@@ -227,7 +234,7 @@ private:
 	MxBool m_version10;
 
 public:
-	MxBool m_unk0x13c; // 0x13c
+	MxBool m_initialized; // 0x13c
 };
 
 #endif // LEGOMAIN_H

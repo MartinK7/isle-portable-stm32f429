@@ -9,7 +9,6 @@
 #include "legocontrolmanager.h"
 #include "legogamestate.h"
 #include "legoinputmanager.h"
-#include "legolocomotionanimpresenter.h"
 #include "legonavcontroller.h"
 #include "legoplantmanager.h"
 #include "legosoundmanager.h"
@@ -288,6 +287,7 @@ MxResult LegoWorld::PlaceActor(
 }
 
 // FUNCTION: LEGO1 0x1001fa70
+// FUNCTION: BETA10 0x100da328
 MxResult LegoWorld::PlaceActor(LegoPathActor* p_actor)
 {
 	LegoPathControllerListCursor cursor(&m_pathControllerList);
@@ -303,6 +303,7 @@ MxResult LegoWorld::PlaceActor(LegoPathActor* p_actor)
 }
 
 // FUNCTION: LEGO1 0x1001fb70
+// FUNCTION: BETA10 0x100da3f1
 MxResult LegoWorld::PlaceActor(
 	LegoPathActor* p_actor,
 	LegoAnimPresenter* p_presenter,
@@ -426,7 +427,7 @@ void LegoWorld::Add(MxCore* p_object)
 #ifndef BETA10
 	if (p_object->IsA("LegoAnimPresenter")) {
 		if (!SDL_strcasecmp(((LegoAnimPresenter*) p_object)->GetAction()->GetObjectName(), "ConfigAnimation")) {
-			FUN_1003e050((LegoAnimPresenter*) p_object);
+			CalculateViewFromAnimation((LegoAnimPresenter*) p_object);
 			((LegoAnimPresenter*) p_object)
 				->GetAction()
 				->SetDuration(((LegoAnimPresenter*) p_object)->GetAnimation()->GetDuration());

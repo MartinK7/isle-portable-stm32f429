@@ -2,8 +2,8 @@
 
 #include "mxbitmap.h"
 #include "mxdebug.h"
+#include "mxmain.h"
 #include "mxmisc.h"
-#include "mxomni.h"
 #include "mxpalette.h"
 #include "mxutilities.h"
 #include "mxvideomanager.h"
@@ -46,16 +46,18 @@ void MxDisplaySurface::Init()
 }
 
 // FUNCTION: LEGO1 0x100ba640
+// FUNCTION: BETA10 0x1013f506
 void MxDisplaySurface::ClearScreen()
 {
+	MxS32 i;
 	MxS32 backBuffers;
 	DDSURFACEDESC desc;
 
-	if (!m_videoParam.Flags().GetFlipSurfaces()) {
-		backBuffers = 2;
+	if (m_videoParam.Flags().GetFlipSurfaces()) {
+		backBuffers = m_videoParam.GetBackBuffers() + 1;
 	}
 	else {
-		backBuffers = m_videoParam.GetBackBuffers() + 1;
+		backBuffers = 2;
 	}
 
 	MxS32 width = m_videoParam.GetRect().GetWidth();
@@ -480,7 +482,7 @@ void MxDisplaySurface::VTable0x28(
 
 	tempSurface->Unlock(NULL);
 
-	if (m_videoParam.Flags().GetF1bit3()) {
+	if (m_videoParam.Flags().GetDoubleScaling()) {
 		RECT destRect = {p_right, p_bottom, p_right + p_width * 2, p_bottom + p_height * 2};
 		m_ddSurface2->Blt(&destRect, tempSurface, NULL, DDBLT_WAIT | DDBLT_KEYSRC, NULL);
 	}
@@ -747,7 +749,7 @@ sixteen_bit:
 // FUNCTION: LEGO1 0x100bba50
 void MxDisplaySurface::Display(MxS32 p_left, MxS32 p_top, MxS32 p_left2, MxS32 p_top2, MxS32 p_width, MxS32 p_height)
 {
-	if (m_videoParam.Flags().GetF2bit1()) {
+	if (m_videoParam.Flags().GetEnabled()) {
 		if (m_videoParam.Flags().GetFlipSurfaces()) {
 			if (g_unk0x1010215c < 2) {
 				g_unk0x1010215c++;
@@ -827,6 +829,7 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::VTable0x44(
 	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT;
 	ddsd.dwWidth = p_bitmap->GetBmiWidth();
 	ddsd.dwHeight = p_bitmap->GetBmiHeightAbs();
+	ddsd.ddpfPixelFormat = m_surfaceDesc.ddpfPixelFormat;
 	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 	*p_ret = 0;
 	ddsd.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
@@ -1009,7 +1012,7 @@ void MxDisplaySurface::VTable0x24(
 
 	MxU8* data = p_bitmap->GetStart(p_left, p_top);
 
-	if (m_videoParam.Flags().GetF1bit3()) {
+	if (m_videoParam.Flags().GetDoubleScaling()) {
 		p_bottom *= 2;
 		p_right *= 2;
 
@@ -1195,6 +1198,8 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::CreateCursorSurface(const CursorBitmap* p_
 	}
 
 	MxS32 bytesPerPixel = ddsd.ddpfPixelFormat.dwRGBBitCount / 8;
+	MxBool isAlphaAvailable = ((ddsd.ddpfPixelFormat.dwFlags & DDPF_ALPHAPIXELS) == DDPF_ALPHAPIXELS) &&
+							  (ddsd.ddpfPixelFormat.dwRGBAlphaBitMask != 0);
 
 	ddsd.dwWidth = p_cursorBitmap->width;
 	ddsd.dwHeight = p_cursorBitmap->height;
@@ -1257,7 +1262,12 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::CreateCursorSurface(const CursorBitmap* p_
 
 					MxS32 pixel;
 					if (!isOpaque) {
-						pixel = RGB8888_CREATE(0, 0, 0, 0); // Transparent pixel
+						if (isAlphaAvailable) {
+							pixel = RGB8888_CREATE(0, 0, 0, 0);
+						}
+						else {
+							pixel = RGB8888_CREATE(0xff, 0, 0xff, 0);
+						} // Transparent pixel
 					}
 					else {
 						pixel = isBlack ? RGB8888_CREATE(0, 0, 0, 0xff) : RGB8888_CREATE(0xff, 0xff, 0xff, 0xff);
@@ -1287,6 +1297,12 @@ LPDIRECTDRAWSURFACE MxDisplaySurface::CreateCursorSurface(const CursorBitmap* p_
 			break;
 		}
 		default: {
+			if (!isAlphaAvailable) {
+				DDCOLORKEY colorkey;
+				colorkey.dwColorSpaceHighValue = RGB8888_CREATE(0xff, 0, 0xff, 0);
+				colorkey.dwColorSpaceLowValue = RGB8888_CREATE(0xff, 0, 0xff, 0);
+				newSurface->SetColorKey(DDCKEY_SRCBLT, &colorkey);
+			}
 			break;
 		}
 		}

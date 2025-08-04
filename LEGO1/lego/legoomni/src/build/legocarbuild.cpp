@@ -374,7 +374,7 @@ void LegoCarBuild::FUN_10023130(MxLong p_x, MxLong p_y)
 		pfVar3[0] = p_x;
 		pfVar3[1] = p_y;
 
-		if (FUN_1003ded0(pfVar3, local30, local84)) {
+		if (CalculateRayOriginDirection(pfVar3, local30, local84)) {
 			MxFloat local18[3];
 			MxFloat local8c[2];
 
@@ -424,7 +424,7 @@ void LegoCarBuild::VTable0x74(MxFloat p_param1[2], MxFloat p_param2[3])
 	MxFloat local20[3];
 	MxFloat local14[3];
 
-	FUN_1003ded0(p_param1, local14, local20);
+	CalculateRayOriginDirection(p_param1, local14, local20);
 
 	fVar1 = (m_unk0x2a4[2] - local20[2]) / local14[2];
 	p_param2[0] = (fVar1 * local14[0] + local20[0]) - m_unk0x2a4[0];
@@ -440,7 +440,7 @@ void LegoCarBuild::VTable0x78(MxFloat p_param1[2], MxFloat p_param2[3])
 	MxFloat local18[3];
 	MxFloat localc[3];
 
-	FUN_1003ded0(p_param1, local18, localc);
+	CalculateRayOriginDirection(p_param1, local18, localc);
 
 	p_param2[2] = m_unk0x2a4[2] +
 				  (m_unk0x2bc[2] - m_unk0x2a4[2]) * ((p_param1[1] - m_unk0x290[1]) / (m_unk0x298[1] - m_unk0x290[1]));
@@ -456,7 +456,7 @@ void LegoCarBuild::VTable0x7c(MxFloat p_param1[2], MxFloat p_param2[3])
 {
 	MxFloat local18[3];
 	MxFloat localc[3];
-	FUN_1003ded0(p_param1, local18, localc);
+	CalculateRayOriginDirection(p_param1, local18, localc);
 
 	MxFloat fVar1 = (m_unk0x2bc[1] - localc[1]) / local18[1];
 	p_param2[0] = fVar1 * local18[0] - m_unk0x2a4[0] + localc[0];
@@ -956,7 +956,7 @@ undefined4 LegoCarBuild::FUN_10024890(MxParam* p_param)
 	LegoControlManagerNotificationParam* param = (LegoControlManagerNotificationParam*) p_param;
 	assert(m_buildState);
 
-	if (param->m_unk0x28) {
+	if (param->m_enabledChild) {
 		switch (param->m_clickedObjectId) {
 		// The enum values are all identical between CopterScript, DunecarScript, JetskiScript, and RacecarScript
 		case CopterScript::c_Info_Ctl:
@@ -1012,7 +1012,7 @@ undefined4 LegoCarBuild::FUN_10024890(MxParam* p_param)
 		case CopterScript::c_Platform_Ctl:
 			FUN_10024f50();
 			m_unk0xf8 = c_unknown8;
-			m_unk0xfc = param->m_unk0x28;
+			m_unk0xfc = param->m_enabledChild;
 			result = 1;
 			break;
 		default:
@@ -1054,7 +1054,7 @@ undefined4 LegoCarBuild::FUN_10024890(MxParam* p_param)
 	LegoControlManagerNotificationParam* param = (LegoControlManagerNotificationParam*) p_param;
 	assert(m_buildState);
 
-	if (param->m_unk0x28) {
+	if (param->m_enabledChild) {
 		switch (param->m_clickedObjectId) {
 		case CopterScript::c_Info_Ctl:
 			m_animPresenter->SetShelfState(LegoCarBuildAnimPresenter::e_selected);
@@ -1116,7 +1116,7 @@ undefined4 LegoCarBuild::FUN_10024890(MxParam* p_param)
 		case CopterScript::c_Platform_Ctl:
 			FUN_10024f50();
 			m_unk0xf8 = c_unknown8;
-			m_unk0xfc = param->m_unk0x28;
+			m_unk0xfc = param->m_enabledChild;
 			result = 1;
 			break;
 		default:
@@ -1233,7 +1233,7 @@ undefined4 LegoCarBuild::FUN_10024c20(MxNotificationParam* p_param)
 			jukeboxScript = JukeboxScript::c_RaceCarBuild_Music;
 		}
 
-		m_unk0x338 = SoundManager()->FUN_100aebd0(*g_jukeboxScript, jukeboxScript);
+		m_unk0x338 = SoundManager()->FindPresenter(*g_jukeboxScript, jukeboxScript);
 
 		if (m_unk0x338) {
 			BackgroundAudioManager()->SetPendingPresenter(m_unk0x338, 5, MxPresenter::e_repeating);
@@ -1252,11 +1252,11 @@ undefined4 LegoCarBuild::FUN_10024c20(MxNotificationParam* p_param)
 // FUNCTION: LEGO1 0x10024ef0
 void LegoCarBuild::FUN_10024ef0()
 {
-	FUN_1003eda0();
+	ResetViewVelocity();
 	m_buildState->m_animationState = LegoVehicleBuildState::e_cutscene;
 	FUN_10025720(FUN_10025d70());
 	m_buildState->m_unk0x4c += 1;
-	FUN_10015820(FALSE, LegoOmni::c_disableInput | LegoOmni::c_disable3d | LegoOmni::c_clearScreen);
+	Disable(FALSE, LegoOmni::c_disableInput | LegoOmni::c_disable3d | LegoOmni::c_clearScreen);
 }
 
 // FUNCTION: LEGO1 0x10024f30

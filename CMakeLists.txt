@@ -2,13 +2,19 @@ cmake_minimum_required(VERSION 3.25...4.0 FATAL_ERROR)
 
 project(isle LANGUAGES CXX C VERSION 0.1)
 
+if (IOS)
+  set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED NO)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
+  add_compile_definitions(IOS)
+endif()
+
 if (WINDOWS_STORE)
   add_compile_definitions(WINDOWS_STORE)
 endif()
 
 if (EMSCRIPTEN)
   add_compile_options(-pthread)
-  add_link_options(-sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=2gb -sUSE_PTHREADS=1 -sPROXY_TO_PTHREAD=1 -sOFFSCREENCANVAS_SUPPORT=1 -sPTHREAD_POOL_SIZE_STRICT=0 -sFORCE_FILESYSTEM=1 -sWASMFS=1 -sEXIT_RUNTIME=1)
+  add_link_options(-sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=2gb -sUSE_PTHREADS=1 -sPROXY_TO_PTHREAD=1 -sOFFSCREENCANVAS_SUPPORT=1 -sPTHREAD_POOL_SIZE_STRICT=0 -sFORCE_FILESYSTEM=1 -sWASMFS=1 -sEXIT_RUNTIME=1)
   set(SDL_PTHREADS ON CACHE BOOL "Enable SDL pthreads" FORCE)
 endif()
 
@@ -33,7 +39,7 @@ else()
 endif()
 
 find_program(SDL_SHADERCROSS_BIN NAMES "shadercross")
-find_package(Python3 3.11 COMPONENTS Interpreter)
+find_package(Python3 3.12 COMPONENTS Interpreter)
 
 option(ISLE_BUILD_APP "Build isle application" ON)
 option(ISLE_ASAN "Enable Address Sanitizer" OFF)
@@ -42,6 +48,7 @@ option(ISLE_WERROR "Treat warnings as errors" OFF)
 option(ISLE_DEBUG "Enable imgui debug" ON)
 cmake_dependent_option(ISLE_USE_DX5 "Build with internal DirectX 5 SDK" "${NOT_MINGW}" "WIN32;CMAKE_SIZEOF_VOID_P EQUAL 4" OFF)
 cmake_dependent_option(ISLE_MINIWIN "Use miniwin" ON "NOT ISLE_USE_DX5" OFF)
+cmake_dependent_option(ISLE_EXTENSIONS "Use extensions" ON "NOT ISLE_USE_DX5" OFF)
 cmake_dependent_option(ISLE_BUILD_CONFIG "Build CONFIG.EXE application" ON "MSVC OR ISLE_MINIWIN;NOT NINTENDO_3DS;NOT WINDOWS_STORE" OFF)
 cmake_dependent_option(ISLE_COMPILE_SHADERS "Compile shaders" ON "SDL_SHADERCROSS_BIN;TARGET Python3::Interpreter" OFF)
 option(CMAKE_POSITION_INDEPENDENT_CODE "Build with -fPIC" ON)
@@ -55,6 +62,7 @@ message(STATUS "Isle app:               ${ISLE_BUILD_APP}")
 message(STATUS "Config app:             ${ISLE_BUILD_CONFIG}")
 message(STATUS "Internal DirectX5 SDK:  ${ISLE_USE_DX5}")
 message(STATUS "Internal miniwin:       ${ISLE_MINIWIN}")
+message(STATUS "Isle extensions:        ${ISLE_EXTENSIONS}")
 message(STATUS "Isle debugging:         ${ISLE_DEBUG}")
 message(STATUS "Compile shaders:        ${ISLE_COMPILE_SHADERS}")
 
@@ -164,6 +172,7 @@ add_library(lego1
 target_precompile_headers(lego1 PRIVATE "LEGO1/lego1_pch.h")
 set_property(TARGET lego1 PROPERTY DEFINE_SYMBOL "LEGO1_DLL")
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/util>")
+target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/extensions/include>")
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/LEGO1>")
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/LEGO1/omni/include>")
 target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/LEGO1/lego/sources>")
@@ -172,6 +181,8 @@ target_include_directories(lego1 PUBLIC "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/L
 target_link_libraries(lego1 PRIVATE SDL3::SDL3)
 target_link_libraries(lego1 PUBLIC SDL3::Headers)
 target_link_libraries(lego1 PRIVATE $<$<BOOL:${ISLE_USE_DX5}>:DirectX5::DirectX5>)
+# Allow unconditional include of miniwin/miniwind3d.h
+target_link_libraries(lego1 PRIVATE miniwin-headers)
 if(WIN32)
   set_property(TARGET lego1 PROPERTY PREFIX "")
 endif()
@@ -302,10 +313,10 @@ target_sources(lego1 PRIVATE
   LEGO1/omni/src/common/mxcompositepresenter.cpp
   LEGO1/omni/src/common/mxcore.cpp
   LEGO1/omni/src/common/mxdebug.cpp
-  LEGO1/omni/src/common/mxmediamanager.cpp
   LEGO1/omni/src/common/mxmediapresenter.cpp
   LEGO1/omni/src/common/mxmisc.cpp
   LEGO1/omni/src/common/mxobjectfactory.cpp
+  LEGO1/omni/src/common/mxpresentationmanager.cpp
   LEGO1/omni/src/common/mxpresenter.cpp
   LEGO1/omni/src/common/mxstring.cpp
   LEGO1/omni/src/common/mxticklemanager.cpp
@@ -316,7 +327,7 @@ target_sources(lego1 PRIVATE
   LEGO1/omni/src/entity/mxentity.cpp
   LEGO1/omni/src/event/mxeventmanager.cpp
   LEGO1/omni/src/event/mxeventpresenter.cpp
-  LEGO1/omni/src/main/mxomni.cpp
+  LEGO1/omni/src/main/mxmain.cpp
   LEGO1/omni/src/main/mxomnicreateflags.cpp
   LEGO1/omni/src/main/mxomnicreateparam.cpp
   LEGO1/omni/src/notify/mxactionnotificationparam.cpp
@@ -457,9 +468,6 @@ target_sources(lego1 PRIVATE
   LEGO1/lego/legoomni/src/race/raceskel.cpp
   LEGO1/lego/legoomni/src/video/legoanimpresenter.cpp
   LEGO1/lego/legoomni/src/video/legoflctexturepresenter.cpp
-  LEGO1/lego/legoomni/src/video/legohideanimpresenter.cpp
-  LEGO1/lego/legoomni/src/video/legolocomotionanimpresenter.cpp
-  LEGO1/lego/legoomni/src/video/legoloopinganimpresenter.cpp
   LEGO1/lego/legoomni/src/video/legomodelpresenter.cpp
   LEGO1/lego/legoomni/src/video/legopalettepresenter.cpp
   LEGO1/lego/legoomni/src/video/legopartpresenter.cpp
@@ -485,6 +493,14 @@ target_link_libraries(lego1 PRIVATE Vec::Vec)
 if (NOT ISLE_MINIWIN)
   target_link_libraries(lego1 PRIVATE d3drm dxguid)
   target_compile_definitions(lego1 PRIVATE DIRECTINPUT_VERSION=0x0500)
+endif()
+
+if (ISLE_EXTENSIONS)
+  target_compile_definitions(lego1 PUBLIC EXTENSIONS)
+  target_sources(lego1 PRIVATE
+    extensions/src/extensions.cpp
+    extensions/src/textureloader.cpp
+  )
 endif()
 
 if (ISLE_BUILD_APP)
@@ -520,6 +536,9 @@ if (ISLE_BUILD_APP)
   # Allow unconditional include of miniwin/miniwindevice.h
   target_link_libraries(isle PRIVATE miniwin-headers)
 
+  # Vector math
+  target_link_libraries(isle PRIVATE Vec::Vec)
+
   # Link DSOUND and WINMM
   if (WIN32)
     target_link_libraries(isle PRIVATE winmm)
@@ -543,9 +562,12 @@ if (ISLE_BUILD_APP)
   endif()
   if(EMSCRIPTEN)
     target_sources(isle PRIVATE
+      ISLE/emscripten/config.cpp
       ISLE/emscripten/events.cpp
       ISLE/emscripten/filesystem.cpp
+      ISLE/emscripten/haptic.cpp
       ISLE/emscripten/messagebox.cpp
+      ISLE/emscripten/window.cpp
     )
     target_compile_definitions(isle PRIVATE "ISLE_EMSCRIPTEN_HOST=\"${ISLE_EMSCRIPTEN_HOST}\"")
     set_property(TARGET isle PROPERTY SUFFIX ".html")
@@ -559,6 +581,11 @@ if (ISLE_BUILD_APP)
   if(WINDOWS_STORE)
     target_sources(isle PRIVATE
       ISLE/xbox_one_series/config.cpp
+    )
+  endif()
+  if (IOS)
+    target_sources(isle PRIVATE
+      ISLE/ios/config.cpp
     )
   endif()
   if(Python3_FOUND)
@@ -718,6 +745,7 @@ if (NOT (NINTENDO_3DS OR WINDOWS_STORE))
   install(TARGETS isle ${install_extra_targets}
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    BUNDLE DESTINATION "."
   )
 endif()
 if (ISLE_BUILD_CONFIG)
@@ -742,6 +770,7 @@ if (ISLE_BUILD_CONFIG)
   endif()
   install(TARGETS isle-config
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    BUNDLE DESTINATION "."
   )
 endif()
 if(EMSCRIPTEN)
@@ -764,7 +793,7 @@ if(NINTENDO_3DS)
     DESCRIPTION "LEGO Island for the Nintendo 3DS"
     AUTHOR "isledecomp/isle-portable"
     VERSION "${PROJECT_VERSION}"
-    ICON "ISLE/res/3ds/icon.png"
+    ICON "${CMAKE_SOURCE_DIR}/packaging/3ds/icon.png"
   )
 
   ctr_create_3dsx(isle SMDH isle.smdh)
@@ -772,10 +801,10 @@ if(NINTENDO_3DS)
     add_custom_command(
       OUTPUT "isle.bnr"
       COMMAND "${BANNERTOOL}" makebanner
-        -i "${CMAKE_SOURCE_DIR}/ISLE/res/3ds/banner.png"
-        -a "${CMAKE_SOURCE_DIR}/ISLE/res/3ds/banner.wav"
+        -i "${CMAKE_SOURCE_DIR}/packaging/3ds/banner.png"
+        -a "${CMAKE_SOURCE_DIR}/packaging/3ds/banner.wav"
         -o "isle.bnr"
-      DEPENDS "${CMAKE_SOURCE_DIR}/ISLE/res/3ds/banner.png" "${CMAKE_SOURCE_DIR}/ISLE/res/3ds/banner.wav"
+      DEPENDS "${CMAKE_SOURCE_DIR}/packaging/3ds/banner.png" "${CMAKE_SOURCE_DIR}/packaging/3ds/banner.wav"
       VERBATIM
     )
 
@@ -785,14 +814,14 @@ if(NINTENDO_3DS)
         -f cia
         -exefslogo
         -o "isle.cia"
-        -rsf "${CMAKE_SOURCE_DIR}/ISLE/res/3ds/template.rsf"
+        -rsf "${CMAKE_SOURCE_DIR}/packaging/3ds/template.rsf"
         -major "${CMAKE_PROJECT_VERSION_MAJOR}"
         -minor "${CMAKE_PROJECT_VERSION_MINOR}"
         -micro 0
         -icon "isle.smdh"
         -banner "isle.bnr"
         -elf "isle.elf"
-      DEPENDS "${CMAKE_SOURCE_DIR}/ISLE/res/3ds/template.rsf" "isle.smdh" "isle.bnr"
+      DEPENDS "${CMAKE_SOURCE_DIR}/packaging/3ds/template.rsf" "isle.smdh" "isle.bnr"
       COMMENT "Building CIA executable target isle.cia"
       VERBATIM
     )
@@ -811,8 +840,14 @@ if(WINDOWS_STORE)
       PATTERN "*/*.msix"
       PATTERN "*/*.msixbundle")
 endif()
-if(MSVC)
+if(MSVC OR IOS)
   set(CPACK_GENERATOR ZIP)
+  if(IOS)
+    set(CPACK_ARCHIVE_FILE_EXTENSION ".ipa")
+    set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
+  endif()
+elseif(APPLE AND NOT IOS)
+  set(CPACK_GENERATOR DragNDrop)
 else()
   set(CPACK_GENERATOR TGZ)
 endif()

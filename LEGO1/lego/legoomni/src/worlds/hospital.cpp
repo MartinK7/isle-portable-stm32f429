@@ -216,7 +216,7 @@ void Hospital::ReadyWorld()
 		m_setWithCurrentAction = 1;
 	}
 
-	FUN_10015820(FALSE, LegoOmni::c_disableInput | LegoOmni::c_disable3d | LegoOmni::c_clearScreen);
+	Disable(FALSE, LegoOmni::c_disableInput | LegoOmni::c_disable3d | LegoOmni::c_clearScreen);
 }
 
 // FUNCTION: LEGO1 0x10074dd0
@@ -367,7 +367,7 @@ MxLong Hospital::HandleEndAction(MxEndActionNotificationParam& p_param)
 	case HospitalState::e_afterAcceptingQuest:
 		m_hospitalState->m_state = HospitalState::e_beforeEnteringAmbulance;
 		act1State = (Act1State*) GameState()->GetState("Act1State");
-		act1State->SetUnknown18(9);
+		act1State->SetState(Act1State::e_transitionToAmbulance);
 	case HospitalState::e_exitToFront:
 		if (m_exited == FALSE) {
 			m_exited = TRUE;
@@ -421,7 +421,7 @@ MxLong Hospital::HandleButtonDown(LegoControlManagerNotificationParam& p_param)
 						Act1State* act1State = (Act1State*) GameState()->GetState("Act1State");
 						assert(act1State);
 
-						act1State->m_unk0x018 = 9;
+						act1State->m_state = Act1State::e_transitionToAmbulance;
 
 						m_destLocation = LegoGameState::e_hospitalExited;
 						DeleteObjects(
@@ -555,7 +555,7 @@ MxLong Hospital::HandleButtonDown(LegoControlManagerNotificationParam& p_param)
 // FUNCTION: LEGO1 0x10075f90
 MxBool Hospital::HandleControl(LegoControlManagerNotificationParam& p_param)
 {
-	if (p_param.m_unk0x28 == 1) {
+	if (p_param.m_enabledChild == 1) {
 		switch (p_param.m_clickedObjectId) {
 		case HospitalScript::c_Info_Ctl:
 			BackgroundAudioManager()->RaiseVolume();

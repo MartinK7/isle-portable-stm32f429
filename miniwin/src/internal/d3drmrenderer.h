@@ -3,6 +3,7 @@
 #include "d3drmmesh_impl.h"
 #include "mathutils.h"
 #include "miniwin/d3drm.h"
+#include "miniwin/miniwind3d.h"
 #include "miniwin/miniwindevice.h"
 #include "structs.h"
 
@@ -60,3 +61,10 @@ protected:
 	int m_virtualWidth, m_virtualHeight;
 	ViewportTransform m_viewportTransform;
 };
+
+Direct3DRMRenderer* CreateDirect3DRMRenderer(
+	const IDirect3DMiniwin* d3d,
+	const DDSURFACEDESC& DDSDesc,
+	const GUID* guid
+);
+void Direct3DRMRenderer_EnumDevices(const IDirect3DMiniwin* d3d, LPD3DENUMDEVICESCALLBACK cb, void* ctx);
