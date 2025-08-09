@@ -7,3 +7,6 @@
 [submodule "imgui"]
 	path = 3rdparty/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "stm32f429-discovery/bootloader-in-flash/libraries/uzlib"]
+	path = stm32f429-discovery/bootloader-in-flash/libraries/uzlib
+	url = https://github.com/pfalcon/uzlib.git

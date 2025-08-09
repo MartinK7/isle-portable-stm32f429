@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
+#include "stm32f4xx.h"
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));

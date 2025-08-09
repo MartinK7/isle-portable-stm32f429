@@ -5,19 +5,33 @@ import subprocess
 import time
 import shutil
 from pathlib import Path
-from pygdbmi.gdbcontroller import GdbController
+from debug_gui import DebuggerApp
+import socket
 
 if len(sys.argv) != 3:
     print("Usage: python3 load-isle2sdram-gdb-debug.py <path_to_isle_dir> <path_to_bootloader>")
     sys.exit(1)
+
+def get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))  # Bind to a free port assigned by the OS
+        return s.getsockname()[1]
+
+# Align down to 4-byte boundary
+def align_down(addr, alignment):
+    return addr & ~(alignment - 1)
+
+PORT = get_free_port()
 
 ISLE_DIR = Path(sys.argv[1]).resolve()
 BOOTLOADER_PATH = Path(sys.argv[2]).resolve()
 
 ISLE_ELF = ISLE_DIR / "isle"
 ISLE_BIN = ISLE_DIR / "isle.bin"
+ISLE_BIN_GZ = ISLE_DIR / "isle.bin.gz"
 BOOTLOADER_ELF = BOOTLOADER_PATH / "bootloader-in-flash.elf"
-SDRAM_ADDR = "0x90000000"
+SDRAM_ADDR = 0x90000000
+SDRAM_SIZE = 8 * 1024 * 1024
 
 STLINK_GDBSERVER = Path("ST-LINK_gdbserver")
 STM32_PROG_CLI = shutil.which("STM32_Programmer_CLI")
@@ -35,6 +49,7 @@ def check_tool(name_or_path):
 
 check_file(ISLE_ELF)
 check_file(ISLE_BIN)
+check_file(ISLE_BIN_GZ)
 check_file(BOOTLOADER_ELF)
 check_tool(STLINK_GDBSERVER)
 check_tool(STM32_PROG_CLI)
@@ -55,46 +70,76 @@ print("[*] Starting ST-LINK_gdbserver...")
 gdbserver_proc = subprocess.Popen([
     str(STLINK_GDBSERVER),
     "-cp", str(Path(STM32_PROG_CLI).parent),
-    "-p", "61222",
+    "-p", f"{PORT}",
     "-l", "1",
     "-d",
     "-s",
     "-m", "0",
-    "-k"
-], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    "-k",
+    "--halt",
+    "-e"
+])#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 time.sleep(1)  # wait for gdbserver to be ready
 
-print("[*] Launching gdb-multiarch in TUI mode for manual debug...")
+# Compute compressed binary size
+isle_gz_size = ISLE_BIN_GZ.stat().st_size
+
+# Compute destination address in SDRAM
+isle_gz_dest_addr = align_down(SDRAM_ADDR + SDRAM_SIZE - isle_gz_size - 8, 4)
+
+print(f"[*] Loading {ISLE_BIN_GZ} to SDRAM at address 0x{isle_gz_dest_addr:X}")
 try:
     subprocess.run([
         "gdb-multiarch",
         str(BOOTLOADER_ELF),
         "-ex", "set confirm off",
-        "-ex", "target remote localhost:61222",
+        "-ex", f"target remote localhost:{PORT}",
 
         "-ex", "tbreak main",
         "-ex", "continue",
         "-ex", "list",
+        "-ex", "bt",
+
+	"-ex", "tbreak decompress_sdram_code",
+	"-ex", "continue",
+	"-ex", "list",
+	"-ex", f"set isle_gz_start_address=0x{isle_gz_dest_addr:X}",
+	"-ex", f"set isle_gz_size={isle_gz_size}",
+	"-ex", f"restore {ISLE_BIN_GZ} binary 0x{isle_gz_dest_addr:X}",
 
         "-ex", "tbreak execute_sdram_code_from_ivt",
         "-ex", "continue",
-        "-ex", "list",
-
-        "-ex", f"restore {ISLE_BIN} binary {SDRAM_ADDR}",
-        "-ex", f"add-symbol-file {ISLE_ELF} {SDRAM_ADDR}",
+        "-ex", "list",        
+#        "-ex", f"restore {ISLE_BIN} binary 0x{SDRAM_ADDR:X}",
+        "-ex", f"add-symbol-file {ISLE_ELF} 0x{SDRAM_ADDR:X}",
 
         "-ex", "tbreak SDL_AppInit",
         "-ex", "continue",
         "-ex", "list",
-        
-#        "-ex", "quit",
-
-#        "-ex", "tui enable",
-#        "-ex", "layout src",
-#        "-ex", "layout regs",
-#        "-ex", "focus cmd"
+         
+         "-ex", "quit"
     ])
+    
+    print("[*] Testing target attach...")
+    
+    subprocess.run([
+        "gdb-multiarch",
+        str(BOOTLOADER_ELF),
+        "-ex", "set confirm off",
+        "-ex", f"target remote localhost:{PORT}",
+        
+        "-ex", "list",
+        "-ex", "bt",
+        
+        "-ex", "quit"
+    ])
+    
+    print("[*] Launching GUI debugger...")
+    
+    app = DebuggerApp(f"{ISLE_ELF}", PORT)
+    app.mainloop()    
+    
 except KeyboardInterrupt:
     print("\n[*] Ctrl+C received.")
 

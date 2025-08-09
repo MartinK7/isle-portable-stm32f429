@@ -3,6 +3,8 @@
 
 #include "unit_tests/sdram_test.h"
 
+#include "uzlib.h"
+
 static void gpio_init(void)
 {
 	// Enable GPIO clocks
@@ -246,6 +248,78 @@ static void sdram_init(void)
 
 typedef void (*func_ptr_t)(void);
 
+// This is need to be set by GDB
+volatile unsigned char *isle_gz_start_address = (void *)0;
+volatile unsigned int   isle_gz_size = 0;
+
+void decompress_sdram_code(void)
+{
+	__NOP();
+
+	/* produce decompressed output in chunks of this size */
+	/* default is to decompress byte by byte; can be any other length */
+	#define OUT_CHUNK_SIZE (8 * 1024)
+
+	static uint32_t dict[128 * 1024 / 4];
+
+    unsigned int len, dlen;
+    const unsigned char *source;
+    unsigned char *dest;
+    int res;
+
+    // Setup addresses
+    source = (void *)isle_gz_start_address;
+	dest = (void *)SDRAM_BASE_ADDR;
+	len = isle_gz_size;
+
+    /* -- get decompressed length -- */
+    dlen =            source[len - 1];
+    dlen = 256*dlen + source[len - 2];
+    dlen = 256*dlen + source[len - 3];
+    dlen = 256*dlen + source[len - 4];
+
+    /* there can be mismatch between length in the trailer and actual
+           data stream; to avoid buffer overruns on overlong streams, reserve
+           one extra byte */
+	dlen++;
+
+	// Assert length
+	if((size_t)dest + dlen >= (size_t)isle_gz_start_address) {
+		while(1) {
+			__NOP();
+		}
+	}
+
+	struct uzlib_uncomp d;
+	uzlib_uncompress_init(&d, dict, sizeof(dict));
+
+	/* all 3 fields below must be initialized by user */
+	d.source = source;
+	d.source_limit = source + len - 4;
+	d.source_read_cb = NULL;
+
+	res = uzlib_gzip_parse_header(&d);
+	while(res != TINF_OK) {
+		__NOP();
+	}
+
+	d.dest_start = d.dest = dest;
+
+	while(dlen) {
+		unsigned int chunk_len = dlen < OUT_CHUNK_SIZE ? dlen : OUT_CHUNK_SIZE;
+		d.dest_limit = d.dest + chunk_len;
+		res = uzlib_uncompress_chksum(&d);
+		dlen -= chunk_len;
+		if(res != TINF_OK) {
+			break;
+		}
+	}
+
+	while(res != TINF_DONE) {
+		__NOP();
+	}
+}
+
 void execute_sdram_code_from_ivt(void)
 {
     // Read PC from SDRAM vector table
@@ -262,6 +336,8 @@ int main(void)
 	gpio_init();
 	rcc_init();
 	sdram_init();
+
+	decompress_sdram_code();
 
 	execute_sdram_code_from_ivt();
 
