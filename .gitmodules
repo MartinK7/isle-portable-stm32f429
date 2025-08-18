@@ -10,3 +10,6 @@
 [submodule "stm32f429-discovery/bootloader-in-flash/libraries/uzlib"]
 	path = stm32f429-discovery/bootloader-in-flash/libraries/uzlib
 	url = https://github.com/pfalcon/uzlib.git
+[submodule "tools/gdb-gui-tkinter"]
+	path = stm32f429-discovery/tools/gdb_gui_tkinter
+	url = https://github.com/MartinK7/gdb-gui-tkinter.git
