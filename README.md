@@ -10,7 +10,11 @@ With many years of experience working on embedded systems (with and without oper
 
 ### Project Status
 
-The project is currently buildable and running.
+The project is currently buildable and running. However, meaningful user input and output are still missing.
+
+Due to limited free time—and a growing sense of skepticism about the project’s practicality—I’ve been exploring alternative approaches.
+One idea is to run the project locally in QEMU, rather than relying on slow remote debugging on the physical hardware.
+And then port it to the real hardware. :)
 
 ```sh
 mkdir -p build
